@@ -1,0 +1,6 @@
+{
+  "name": "flowmodel-opentracing",
+  "version": "0.0.1",
+  "type": "flogo:flow-model",
+  "description": "A flow model for TIBCO Flogo with OpenTracing features"
+}
