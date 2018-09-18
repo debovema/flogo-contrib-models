@@ -2,8 +2,8 @@ package behaviors
 
 import (
 	"github.com/TIBCOSoftware/flogo-contrib/action/flow/model"
-
 	simple_behaviors "github.com/TIBCOSoftware/flogo-contrib/model/simple/behaviors"
+	"github.com/opentracing/opentracing-go"
 )
 
 type OpenTracingTask struct {
@@ -11,6 +11,14 @@ type OpenTracingTask struct {
 
 // Enter implements model.Task.Enter
 func (tb *OpenTracingTask) Enter(ctx model.TaskContext) (enterResult model.EnterResult) {
+	var a, _ = ctx.FlowWorkingData().GetAttr("opentracing-flow-span-context")
+	parentSpanContext := a.Value().(opentracing.SpanContext)
+
+	sp := opentracing.StartSpan("flogo-activity", opentracing.ChildOf(parentSpanContext))
+	sp.SetTag("tag", "value")
+
+	defer sp.Finish()
+
 	return (&simple_behaviors.Task{}).Enter(ctx)
 }
 

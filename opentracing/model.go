@@ -20,7 +20,7 @@ func init() {
 
 func New() *model.FlowModel {
 	m := model.New(MODEL_NAME)
-	m.RegisterFlowBehavior(&simple_behaviors.Flow{})
+	m.RegisterFlowBehavior(&behaviors.OpenTracingFlow{})
 	m.RegisterDefaultTaskBehavior("basic", &behaviors.OpenTracingTask{})
 	m.RegisterTaskBehavior("iterator", &simple_behaviors.IteratorTask{})
 
