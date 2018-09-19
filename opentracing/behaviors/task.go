@@ -3,6 +3,7 @@ package behaviors
 import (
 	"github.com/TIBCOSoftware/flogo-contrib/action/flow/model"
 	simple_behaviors "github.com/TIBCOSoftware/flogo-contrib/model/simple/behaviors"
+	"github.com/TIBCOSoftware/flogo-lib/core/data"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -11,14 +12,21 @@ type OpenTracingTask struct {
 
 // Enter implements model.Task.Enter
 func (tb *OpenTracingTask) Enter(ctx model.TaskContext) (enterResult model.EnterResult) {
-	var a, _ = ctx.FlowWorkingData().GetAttr("opentracing-flow-span-context")
-	parentSpanContext := a.Value().(opentracing.SpanContext)
+	// retrieve parent span context
+	parentSpanContextAttr, _ := ctx.FlowWorkingData().GetAttr("opentracing-flow-span-context")
+	parentSpanContext := parentSpanContextAttr.Value().(opentracing.SpanContext)
 
-	sp := opentracing.StartSpan("flogo-activity", opentracing.ChildOf(parentSpanContext))
-	sp.SetTag("tag", "value")
+	// create span for task
+	sp := opentracing.StartSpan(ctx.Task().Name(), opentracing.ChildOf(parentSpanContext))
+	//sp.SetTag("tag", "value")
 
-	defer sp.Finish()
+	// store span in working data to close it later
+	spanAttr, err := data.NewAttribute("opentracing-task-span", data.TypeAny, sp)
+	if err == nil {
+		ctx.AddWorkingData(spanAttr)
+	}
 
+	// delegate to simple model
 	return (&simple_behaviors.Task{}).Enter(ctx)
 }
 
@@ -34,6 +42,12 @@ func (tb *OpenTracingTask) PostEval(ctx model.TaskContext) (evalResult model.Eva
 
 // Done implements model.Task.Done
 func (tb *OpenTracingTask) Done(ctx model.TaskContext) (notifyFlow bool, taskEntries []*model.TaskEntry, err error) {
+	taskSpanAttr, exists := ctx.GetWorkingData("opentracing-task-span")
+	if exists {
+		taskSpan := taskSpanAttr.Value().(opentracing.Span)
+		taskSpan.Finish()
+	}
+
 	return (&simple_behaviors.Task{}).Done(ctx)
 }
 
