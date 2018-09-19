@@ -5,7 +5,7 @@ import (
 	simple_behaviors "github.com/TIBCOSoftware/flogo-contrib/model/simple/behaviors"
 	"github.com/TIBCOSoftware/flogo-lib/logger"
 
-	"./behaviors"
+	"github.com/debovema/flogo-contrib-models/opentracing/behaviors"
 )
 
 // log is the default package logger
