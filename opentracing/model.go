@@ -4,7 +4,8 @@ import (
 	"github.com/TIBCOSoftware/flogo-contrib/action/flow/model"
 	simple_behaviors "github.com/TIBCOSoftware/flogo-contrib/model/simple/behaviors"
 	"github.com/TIBCOSoftware/flogo-lib/logger"
-	"github.com/square-it/flogo-contrib-models/opentracing/behaviors"
+
+	"./behaviors"
 )
 
 // log is the default package logger
