@@ -23,10 +23,23 @@ var log = logger.GetLogger("flowmodel-opentracing")
 type OpenTracingFlow struct {
 }
 
+const (
+	hostPort = "0.0.0.0:0" // not applicable -> leave as-is
+
+	// Debug mode.
+	debug = false
+
+	// same span can be set to true for RPC style spans (Zipkin V1) vs Node style (OpenTracing)
+	sameSpan = true
+
+	// make Tracer generate 128 bit traceID's for root spans.
+	traceID128Bit = true
+)
+
 type OpenTracingConfig struct {
-	Implementation string `json:"implementation"`
-	Transport      string `json:"transport"`
-	Endpoint       string `json:"endpoint"`
+	Implementation string   `json:"implementation"`
+	Transport      string   `json:"transport"`
+	Endpoints      []string `json:"endpoints"`
 }
 
 func initJaeger(service string) (opentracing.Tracer, io.Closer) {
@@ -45,19 +58,6 @@ func initJaeger(service string) (opentracing.Tracer, io.Closer) {
 	}
 	return tracer, closer
 }
-
-const (
-	hostPort = "0.0.0.0:0" // not applicable -> leave as-is
-
-	// Debug mode.
-	debug = false
-
-	// same span can be set to true for RPC style spans (Zipkin V1) vs Node style (OpenTracing)
-	sameSpan = true
-
-	// make Tracer generate 128 bit traceID's for root spans.
-	traceID128Bit = true
-)
 
 func initZipkinHttp(serviceName string, endpoint string) opentracing.Tracer {
 	// Create our HTTP collector.
@@ -83,6 +83,31 @@ func initZipkinHttp(serviceName string, endpoint string) opentracing.Tracer {
 	return tracer
 }
 
+func initZipkinKafka(serviceName string, endpoint []string) opentracing.Tracer {
+	// Create our Kafka collector.
+	collector, err := zipkin.NewKafkaCollector(endpoint)
+	//collector, err := zipkin.NewKafkaCollector(endpoint, zipkin.KafkaLogger(zipkin.LogWrapper(log.New(os.Stdout, log.Prefix(), log.Flags()))))
+
+	if err == nil {
+		// Create our recorder.
+		recorder := zipkin.NewRecorder(collector, debug, hostPort, serviceName)
+
+		// Create our tracer.
+		tracer, err := zipkin.NewTracer(
+			recorder,
+			zipkin.ClientServerSameSpan(sameSpan),
+			zipkin.TraceID128Bit(traceID128Bit),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("unable to create Zipkin tracer: %+v\n", err))
+		}
+		return tracer
+	} else {
+		// panic(fmt.Sprintf("unable to create Zipkin Kafka collector: %+v\n", err))
+		return nil
+	}
+}
+
 func readOpentracingContext(ctx model.FlowContext) OpenTracingConfig {
 	opentracingConfigData, _ := ctx.FlowDefinition().GetAttr("opentracing-config")
 
@@ -99,9 +124,11 @@ func initTracer(serviceName string, opentracingConfig OpenTracingConfig) (opentr
 	case "zipkin":
 		switch opentracingConfig.Transport {
 		case "http":
-			return initZipkinHttp(serviceName, opentracingConfig.Endpoint), nil
+			return initZipkinHttp(serviceName, opentracingConfig.Endpoints[0]), nil
+		case "kafka":
+			return initZipkinKafka(serviceName, opentracingConfig.Endpoints), nil
 		default:
-			return nil, errors.New("supported transport for OpenTracing Zipkin traecer is 'http'")
+			return nil, errors.New("supported transports for OpenTracing Zipkin traecer are 'http' or 'kafka'")
 		}
 	case "jaeger":
 		switch opentracingConfig.Transport {
@@ -121,18 +148,18 @@ func (fb *OpenTracingFlow) Start(ctx model.FlowContext) (started bool, taskEntri
 	opentracingConfig := readOpentracingContext(ctx)
 
 	tracer, err := initTracer(ctx.FlowDefinition().Name(), opentracingConfig)
-	if err != nil {
+	if err != nil || tracer == nil {
 		log.Warn("unable to init OpenTracing tracer. Ignoring.")
+	} else {
+		opentracing.SetGlobalTracer(tracer)
+
+		sp := opentracing.StartSpan(ctx.FlowDefinition().Name())
+
+		ctx.WorkingData().AddAttr("opentracing-flow-span-context", data.TypeAny, sp.Context())
+
+		// store span in working data to close it later
+		ctx.WorkingData().AddAttr("opentracing-flow-span", data.TypeAny, sp)
 	}
-
-	opentracing.SetGlobalTracer(tracer)
-
-	sp := opentracing.StartSpan(ctx.FlowDefinition().Name())
-
-	ctx.WorkingData().AddAttr("opentracing-flow-span-context", data.TypeAny, sp.Context())
-
-	// store span in working data to close it later
-	ctx.WorkingData().AddAttr("opentracing-flow-span", data.TypeAny, sp)
 
 	return (&simple_behaviors.Flow{}).Start(ctx)
 }
