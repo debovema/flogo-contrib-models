@@ -23,11 +23,8 @@ This model requires some little updates in flogo-contrib and flogo-lib which are
 repositories.
 A script is provided to perform the operation.
 
-Change directory to
-```bash
-cd src/<appname>
-```
- 
+In the directory of the Flogo project (with a *flogo.json* file) :
+
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/debovema/flogo-contrib-models/master/opentracing/patch-vendor.sh)"
 ```
