@@ -70,7 +70,7 @@ by
         "model": "github.com/square-it/flogo-contrib-models/opentracing",
         "attributes": [
           {
-            "name": "opentracing-config-http",
+            "name": "opentracing-config",
             "type": "any",
             "value": {
               "implementation": "zipkin",
@@ -102,3 +102,31 @@ by
 ```
 
 Replace *127.0.0.1* by the actual IP of the Zipkin collector.
+
+## Configuration
+
+This model can be configured by a JSON object in the *attributes* array (see [Usage](#usage)).
+This object is an [attribute](https://github.com/TIBCOSoftware/flogo-lib/blob/master/core/data/attribute.go) of **type**
+*any* with **name** *opentracing-config*.
+
+The **value** is composed of three fields: 
+
+* **implementation**: possible values are *zipkin* or *jaeger*
+* **transport**: possible values are *http* (for all implementations) or *kafka* (for *zipkin* implementation only)
+* **endpoints**: an array with a single endpoint (for HTTP transport) or multiple endpoints (for Kafka transport)
+
+For instance:
+
+```json
+          {
+            "name": "opentracing-config",
+            "type": "any",
+            "value": {
+              "implementation": "zipkin",
+              "transport": "http",
+              "endpoints": [
+                "http://127.0.0.1:9411/api/v1/spans"
+              ]
+            }
+          }
+```
