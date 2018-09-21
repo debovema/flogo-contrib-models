@@ -13,16 +13,17 @@ type OpenTracingTask struct {
 // Enter implements model.Task.Enter
 func (tb *OpenTracingTask) Enter(ctx model.TaskContext) (enterResult model.EnterResult) {
 	// retrieve parent span context
-	parentSpanContextAttr, exists := ctx.FlowWorkingData().GetAttr("opentracing-flow-span-context")
+	parentSpanAttr, exists := ctx.FlowWorkingData().GetAttr("opentracing-flow-span")
 	if exists {
-		parentSpanContext := parentSpanContextAttr.Value().(opentracing.SpanContext)
+		parentSpan := parentSpanAttr.Value().(opentracing.Span)
 
 		// create span for task
-		sp := opentracing.StartSpan(ctx.Task().Name(), opentracing.ChildOf(parentSpanContext))
-		//sp.SetTag("tag", "value")
+		span := opentracing.StartSpan(ctx.Task().Name(), opentracing.ChildOf(parentSpan.Context()))
+		span.SetTag("type", "flogo:activity")
+		span.SetTag("id", ctx.Task().ID())
 
 		// store span in working data to close it later
-		spanAttr, err := data.NewAttribute("opentracing-task-span", data.TypeAny, sp)
+		spanAttr, err := data.NewAttribute("opentracing-task-span", data.TypeAny, span)
 		if err == nil {
 			ctx.AddWorkingData(spanAttr)
 		}

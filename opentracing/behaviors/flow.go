@@ -108,18 +108,22 @@ func initZipkinKafka(serviceName string, endpoint []string) opentracing.Tracer {
 	}
 }
 
-func readOpentracingContext(ctx model.FlowContext) OpenTracingConfig {
-	opentracingConfigData, _ := ctx.FlowDefinition().GetAttr("opentracing-config")
+func readOpentracingContext(ctx model.FlowContext) *OpenTracingConfig {
+	opentracingConfigData, exists := ctx.FlowDefinition().GetAttr("opentracing-config")
 
-	value := opentracingConfigData.Value()
+	if exists {
+		value := opentracingConfigData.Value()
 
-	opentracingConfig := &OpenTracingConfig{}
-	mapstructure.Decode(value, opentracingConfig)
+		opentracingConfig := &OpenTracingConfig{}
+		mapstructure.Decode(value, opentracingConfig)
 
-	return *opentracingConfig
+		return opentracingConfig
+	} else {
+		return nil
+	}
 }
 
-func initTracer(serviceName string, opentracingConfig OpenTracingConfig) (opentracing.Tracer, error) {
+func initTracer(serviceName string, opentracingConfig *OpenTracingConfig) (opentracing.Tracer, error) {
 	switch opentracingConfig.Implementation {
 	case "zipkin":
 		switch opentracingConfig.Transport {
@@ -147,18 +151,21 @@ func initTracer(serviceName string, opentracingConfig OpenTracingConfig) (opentr
 func (fb *OpenTracingFlow) Start(ctx model.FlowContext) (started bool, taskEntries []*model.TaskEntry) {
 	opentracingConfig := readOpentracingContext(ctx)
 
-	tracer, err := initTracer(ctx.FlowDefinition().Name(), opentracingConfig)
-	if err != nil || tracer == nil {
-		log.Warn("unable to init OpenTracing tracer. Ignoring.")
+	if opentracingConfig != nil {
+		tracer, err := initTracer(ctx.FlowDefinition().Name(), opentracingConfig)
+		if err != nil || tracer == nil {
+			log.Warn("Unable to init OpenTracing tracer. Ignoring.")
+		} else {
+			opentracing.SetGlobalTracer(tracer)
+
+			span := opentracing.StartSpan(ctx.FlowDefinition().Name())
+			span.SetTag("type", "flogo:flow")
+
+			// store span in working data to close it later and to pass the span context to activities
+			ctx.WorkingData().AddAttr("opentracing-flow-span", data.TypeAny, span)
+		}
 	} else {
-		opentracing.SetGlobalTracer(tracer)
-
-		sp := opentracing.StartSpan(ctx.FlowDefinition().Name())
-
-		ctx.WorkingData().AddAttr("opentracing-flow-span-context", data.TypeAny, sp.Context())
-
-		// store span in working data to close it later
-		ctx.WorkingData().AddAttr("opentracing-flow-span", data.TypeAny, sp)
+		log.Warn("Unable to init OpenTracing tracer. Ignoring.")
 	}
 
 	return (&simple_behaviors.Flow{}).Start(ctx)
