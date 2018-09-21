@@ -29,4 +29,76 @@ In the directory of the Flogo project (with a *flogo.json* file) :
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/debovema/flogo-contrib-models/master/opentracing/patch-vendor.sh)"
 ```
 
+## Usage
 
+In the *flogo.json*, replace 
+
+```json
+  "resources": [
+    {
+      "id": "flow:sample_flow",
+      "data": {
+        "name": "SampleFlow",
+        "tasks": [
+          {
+            "id": "log_2",
+            "name": "Log Message",
+            "description": "Simple Log Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/log",
+              "input": {
+                "message": "Simple Log",
+                "flowInfo": "false",
+                "addToFlow": "false"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+```
+
+by 
+
+```json
+  "resources": [
+    {
+      "id": "flow:sample_flow",
+      "data": {
+        "name": "SampleFlow",
+        "model": "github.com/square-it/flogo-contrib-models/opentracing",
+        "attributes": [
+          {
+            "name": "opentracing-config-http",
+            "type": "any",
+            "value": {
+              "implementation": "zipkin",
+              "transport": "http",
+              "endpoints": [
+                "http://127.0.0.1:9411/api/v1/spans"
+              ]
+            }
+          }
+        ],
+        "tasks": [
+          {
+            "id": "log_2",
+            "name": "Log Message",
+            "description": "Simple Log Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/log",
+              "input": {
+                "message": "Simple Log",
+                "flowInfo": "false",
+                "addToFlow": "false"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+```
+
+Replace *127.0.0.1* by the actual IP of the Zipkin collector.
