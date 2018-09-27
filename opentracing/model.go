@@ -16,11 +16,11 @@ import (
 var log = logger.GetLogger("flowmodel-opentracing")
 
 const (
-	MODEL_NAME = "github.com/square-it/flogo-contrib-models/opentracing"
+	MODEL_NAME = "opentracing-model"
 
 	ENV_VARS_PREFIX        = "FLOGO_OPENTRACING_"
-	ENV_VAR_TRANSPORT      = ENV_VARS_PREFIX + "TRANSPORT"
 	ENV_VAR_IMPLEMENTATION = ENV_VARS_PREFIX + "IMPLEMENTATION"
+	ENV_VAR_TRANSPORT      = ENV_VARS_PREFIX + "TRANSPORT"
 	ENV_VAR_ENDPOINTS      = ENV_VARS_PREFIX + "ENDPOINTS"
 	ENV_VAR_SINGLE_TRACER  = ENV_VARS_PREFIX + "SINGLE_TRACER"
 )
