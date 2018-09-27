@@ -17,13 +17,24 @@ func (tb *OpenTracingTask) Enter(ctx model.TaskContext) (enterResult model.Enter
 	if exists {
 		parentSpan := parentSpanAttr.Value().(opentracing.Span)
 
-		// create span for task
-		span := opentracing.StartSpan(ctx.Task().Name(), opentracing.ChildOf(parentSpan.Context()))
-		span.SetTag("type", "flogo:activity")
-		span.SetTag("id", ctx.Task().ID())
+		var span opentracing.Span
+		var spanName string
 
-		// store span in working data to close it later
-		spanAttr, err := data.NewAttribute("opentracing-task-span", data.TypeAny, span)
+		// create child span for task (might be an activity or an iterator)
+		if ctx.Task().TypeID() == "iterator" {
+			span = opentracing.StartSpan(ctx.Task().Name()+" (iterator)", opentracing.ChildOf(parentSpan.Context()))
+			span.SetTag("type", "flogo:iterator")
+			spanName = "opentracing-iterator-span"
+			span.SetTag("id", ctx.Task().ID()+" (iterator)")
+		} else {
+			span = opentracing.StartSpan(ctx.Task().Name(), opentracing.ChildOf(parentSpan.Context()))
+			span.SetTag("type", "flogo:activity")
+			spanName = "opentracing-activity-span"
+			span.SetTag("id", ctx.Task().ID())
+		}
+
+		// store child span in working data to close it later
+		spanAttr, err := data.NewAttribute(spanName, data.TypeAny, span)
 		if err == nil {
 			ctx.AddWorkingData(spanAttr)
 		}
@@ -40,17 +51,37 @@ func (tb *OpenTracingTask) Eval(ctx model.TaskContext) (evalResult model.EvalRes
 
 // PostEval implements model.Task.PostEval
 func (tb *OpenTracingTask) PostEval(ctx model.TaskContext) (evalResult model.EvalResult, err error) {
-	return (&simple_behaviors.Task{}).PostEval(ctx)
-}
-
-// Done implements model.Task.Done
-func (tb *OpenTracingTask) Done(ctx model.TaskContext) (notifyFlow bool, taskEntries []*model.TaskEntry, err error) {
-	taskSpanAttr, exists := ctx.GetWorkingData("opentracing-task-span")
+	taskSpanAttr, exists := ctx.GetWorkingData("opentracing-activity-span")
 	if exists {
 		taskSpan := taskSpanAttr.Value().(opentracing.Span)
 		taskSpan.Finish()
 	}
 
+	// delegate to simple model
+	return (&simple_behaviors.Task{}).PostEval(ctx)
+}
+
+// Done implements model.Task.Done
+func (tb *OpenTracingTask) Done(ctx model.TaskContext) (notifyFlow bool, taskEntries []*model.TaskEntry, err error) {
+	taskSpanAttr, exists := ctx.GetWorkingData("opentracing-activity-span")
+	if exists {
+		taskSpan := taskSpanAttr.Value().(opentracing.Span)
+		taskSpan.Finish()
+	}
+
+	iterationSpanAttr, exists := ctx.GetWorkingData("opentracing-iteration-span")
+	if exists {
+		iterationSpan := iterationSpanAttr.Value().(opentracing.Span)
+		iterationSpan.Finish()
+	}
+
+	iteratorSpanAttr, exists := ctx.GetWorkingData("opentracing-iterator-span")
+	if exists {
+		iteratorSpan := iteratorSpanAttr.Value().(opentracing.Span)
+		iteratorSpan.Finish()
+	}
+
+	// delegate to simple model
 	return (&simple_behaviors.Task{}).Done(ctx)
 }
 

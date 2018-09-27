@@ -2,7 +2,6 @@ package opentracing
 
 import (
 	"github.com/TIBCOSoftware/flogo-contrib/action/flow/model"
-	simple_behaviors "github.com/TIBCOSoftware/flogo-contrib/model/simple/behaviors"
 	"github.com/TIBCOSoftware/flogo-lib/logger"
 
 	"github.com/debovema/flogo-contrib-models/opentracing/behaviors"
@@ -23,7 +22,7 @@ func New() *model.FlowModel {
 	m := model.New(MODEL_NAME)
 	m.RegisterFlowBehavior(&behaviors.OpenTracingFlow{})
 	m.RegisterDefaultTaskBehavior("basic", &behaviors.OpenTracingTask{})
-	m.RegisterTaskBehavior("iterator", &simple_behaviors.IteratorTask{})
+	m.RegisterTaskBehavior("iterator", &behaviors.OpenTracingIteratorTask{})
 
 	return m
 }
