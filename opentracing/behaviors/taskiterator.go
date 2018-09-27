@@ -16,49 +16,54 @@ type OpenTracingIteratorTask struct {
 
 // Eval implements model.TaskBehavior.Eval
 func (tb *OpenTracingIteratorTask) Eval(ctx model.TaskContext) (evalResult model.EvalResult, err error) {
-	// retrieve parent span context (the one from iterator)
-	iteratorSpanAttr, exists := ctx.GetWorkingData("opentracing-iterator-span")
+	_, exists := ctx.GetWorkingData("iteration") // first call does not have this attribute and is not an actual call to activity
+
 	if exists {
-		var iterationIndex int
-		var span opentracing.Span
-		var parentSpan opentracing.SpanReference
+		// retrieve parent span context (the one from iterator)
 
-		iteratorSpan := iteratorSpanAttr.Value().(opentracing.Span)
-
-		// check whether a span exists: the one from the last iteration which must be finnished here
-		iterationSpanAttr, exists := ctx.GetWorkingData("opentracing-iteration-span")
+		iteratorSpanAttr, exists := ctx.GetWorkingData("opentracing-iterator-span")
 		if exists {
-			iterationSpan := iterationSpanAttr.Value().(opentracing.Span)
-			iterationSpan.Finish()
+			var iterationIndex int
+			var span opentracing.Span
+			var parentSpan opentracing.SpanReference
 
-			// retrieve iteration index
-			iterationIndexAttr, exists := ctx.GetWorkingData("opentracing-iteration-index")
+			iteratorSpan := iteratorSpanAttr.Value().(opentracing.Span)
+
+			// check whether a span exists: the one from the last iteration which must be finnished here
+			iterationSpanAttr, exists := ctx.GetWorkingData("opentracing-iteration-span")
 			if exists {
-				iterationIndex = iterationIndexAttr.Value().(int) + 1
+				iterationSpan := iterationSpanAttr.Value().(opentracing.Span)
+				iterationSpan.Finish()
+
+				// retrieve iteration index
+				iterationIndexAttr, exists := ctx.GetWorkingData("opentracing-iteration-index")
+				if exists {
+					iterationIndex = iterationIndexAttr.Value().(int) + 1
+				}
+
+				// create "follows from" span for next iterations
+				//parentSpan = opentracing.FollowsFrom(iterationSpan.Context())
+				// create child span for next iterations
+				parentSpan = opentracing.ChildOf(iteratorSpan.Context())
+			} else {
+				// create child span for first iteration
+				parentSpan = opentracing.ChildOf(iteratorSpan.Context())
 			}
 
-			// create "follows from" span for next iterations
-			//parentSpan = opentracing.FollowsFrom(iterationSpan.Context())
-			// create child span for next iterations
-			parentSpan = opentracing.ChildOf(iteratorSpan.Context())
-		} else {
-			// create child span for first iteration
-			parentSpan = opentracing.ChildOf(iteratorSpan.Context())
-		}
+			span = opentracing.StartSpan(ctx.Task().Name()+" (iteration #"+strconv.Itoa(iterationIndex)+")", parentSpan)
 
-		span = opentracing.StartSpan(ctx.Task().Name()+" (iteration #"+strconv.Itoa(iterationIndex)+")", parentSpan)
+			span.SetTag("type", "flogo:activity")
+			span.SetTag("id", ctx.Task().ID()+"@"+strconv.Itoa(iterationIndex))
 
-		span.SetTag("type", "flogo:activity")
-		span.SetTag("id", ctx.Task().ID()+"@"+strconv.Itoa(iterationIndex))
-
-		// store child span in working data to close it later
-		spanAttr, err := data.NewAttribute("opentracing-iteration-span", data.TypeAny, span)
-		if err == nil {
-			ctx.AddWorkingData(spanAttr)
-		}
-		indexAttr, err := data.NewAttribute("opentracing-iteration-index", data.TypeInteger, iterationIndex)
-		if err == nil {
-			ctx.AddWorkingData(indexAttr)
+			// store child span in working data to close it later
+			spanAttr, err := data.NewAttribute("opentracing-iteration-span", data.TypeAny, span)
+			if err == nil {
+				ctx.AddWorkingData(spanAttr)
+			}
+			indexAttr, err := data.NewAttribute("opentracing-iteration-index", data.TypeInteger, iterationIndex)
+			if err == nil {
+				ctx.AddWorkingData(indexAttr)
+			}
 		}
 	}
 
