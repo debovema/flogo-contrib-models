@@ -20,18 +20,20 @@ if [ $GO_GET_RESULT -ne 0 ] && [ $GO_GET_RESULT -ne 2 ]; then
   exit 1
 fi
 
+VENDOR_DIR=$(echo ./src/*/vendor)
+
 echo "Patch repositories..."
 # remove existing repositories in vendor/
-rm -rf ./src/*/vendor/github.com/debovema/flogo-contrib-models
-rm -rf ./src/*/vendor/github.com/TIBCOSoftware/flogo-contrib
-rm -rf ./src/*/vendor/github.com/TIBCOSoftware/flogo-lib
-rm -rf ./src/*/vendor/github.com/apache/thrift
+rm -rf $VENDOR_DIR/github.com/debovema/flogo-contrib-models
+rm -rf $VENDOR_DIR/github.com/TIBCOSoftware/flogo-contrib
+rm -rf $VENDOR_DIR/github.com/TIBCOSoftware/flogo-lib
+rm -rf $VENDOR_DIR/github.com/apache/thrift
 
 # create symbolic links for removed repositories to their counterparts in $GOPATH/src
-ln -s $GOPATH/src/github.com/debovema/flogo-contrib-models ./src/*/vendor/github.com/debovema/flogo-contrib-models
-ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib ./src/*/vendor/github.com/TIBCOSoftware/flogo-contrib
-ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-lib ./src/*/vendor/github.com/TIBCOSoftware/flogo-lib
-ln -s $GOPATH/src/github.com/apache/thrift ./src/*/vendor/github.com/apache/thrift
+ln -s $GOPATH/src/github.com/debovema/flogo-contrib-models $VENDOR_DIR/github.com/debovema/flogo-contrib-models
+ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib $VENDOR_DIR/github.com/TIBCOSoftware/flogo-contrib
+ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-lib $VENDOR_DIR/github.com/TIBCOSoftware/flogo-lib
+ln -s $GOPATH/src/github.com/apache/thrift $VENDOR_DIR/github.com/apache/thrift
 
 # update Git repositories to use correct branch for each one
 git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib remote set-url origin https://github.com/debovema/flogo-contrib.git
