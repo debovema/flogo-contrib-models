@@ -21,6 +21,7 @@ if [ $GO_GET_RESULT -ne 0 ] && [ $GO_GET_RESULT -ne 2 ]; then
 fi
 
 VENDOR_DIR=$(echo ./src/*/vendor)
+CYGWIN=winsymlinks:nativestrict
 
 echo "Patch repositories..."
 # remove existing repositories in vendor/
