@@ -12,7 +12,9 @@ fi
 echo "Getting Go dependencies"
 go get github.com/debovema/flogo-contrib-models/opentracing
 
-if [ $? -ne 0 ]; then
+GO_GET_RESULT=$?
+
+if [ $GO_GET_RESULT -ne 0 ] && [ $GO_GET_RESULT -ne 2 ]; then
   echo
   echo "Fatal: unable to retrieve Go dependencies" >&2
   exit 1
