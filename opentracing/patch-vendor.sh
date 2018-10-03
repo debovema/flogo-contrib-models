@@ -4,27 +4,32 @@
 # once these updates will be merged into TIBCOSoftware repositories, this script will not be required anymore
 
 if [ ! -d ./src/*/vendor/github.com/TIBCOSoftware ]; then
-  echo "Fatal: directory './src/*/vendor/github.com/TIBCOSoftware' does not exist." >&2
+  echo "Fatal: vendor directory does not exist, run 'flogo ensure' before this script" >&2
   exit 1
 fi
 
-cd ./src/*/vendor/github.com/TIBCOSoftware
+# this go get will (force-)retrieve all dependencies of the model to $GOPATH/src
+go get github.com/debovema/flogo-contrib-models/opentracing
 
-rm -rf ./flogo-contrib
-git clone https://github.com/debovema/flogo-contrib.git
-cd flogo-contrib
-git checkout working-data-between-flow-and-activities
+# remove existing repositories in vendor/
+rm -rf ./src/*/vendor/github.com/debovema/flogo-contrib-models
+rm -rf ./src/*/vendor/github.com/TIBCOSoftware/flogo-contrib
+rm -rf ./src/*/vendor/github.com/TIBCOSoftware/flogo-lib
+rm -rf ./src/*/vendor/github.com/apache/thrift
 
-cd ..
+# create symbolic links for removed repositories to their counterparts in $GOPATH/src
+ln -s $GOPATH/src/github.com/debovema/flogo-contrib-models ./src/*/vendor/github.com/debovema/flogo-contrib-models
+ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib ./src/*/vendor/github.com/TIBCOSoftware/flogo-contrib
+ln -s $GOPATH/src/github.com/TIBCOSoftware/flogo-lib ./src/*/vendor/github.com/TIBCOSoftware/flogo-lib
+ln -s $GOPATH/src/github.com/apache/thrift ./src/*/vendor/github.com/apache/thrift
 
-rm -rf ./flogo-lib
+# update Git repositories to use correct branch for each one
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib remote set-url origin https://github.com/debovema/flogo-contrib.git
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib config core.autocrlf input # fix for Windows
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-contrib pull origin working-data-between-flow-and-activities
 
-git clone https://github.com/debovema/flogo-lib.git
-cd flogo-lib
-git checkout working-data-between-flow-and-activities
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-lib remote set-url origin https://github.com/debovema/flogo-lib.git
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-lib config core.autocrlf input # fix for Windows
+git -C $GOPATH/src/github.com/TIBCOSoftware/flogo-lib pull origin working-data-between-flow-and-activities
 
-cd ../..
-
-# patch Apache Thrift
-
-sed -i 's|oprot.Flush(ctx)|oprot.Flush()|' ./openzipkin/zipkin-go-opentracing/thrift/gen-go/scribe/scribe.go
+git -C $GOPATH/src/github.com/apache/thrift checkout master

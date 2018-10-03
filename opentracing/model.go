@@ -27,28 +27,30 @@ const (
 
 func initFromEnvVars() {
 	globalOpenTracingImplementation, exists := os.LookupEnv(ENV_VAR_IMPLEMENTATION)
+	if !exists {
+		return
+	}
+
 	log.Infof("Flogo OpenTracing implementation detected: %s.", globalOpenTracingImplementation)
 
+	globalOpenTracingTransport, exists := os.LookupEnv(ENV_VAR_TRANSPORT)
+	if !exists {
+		log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_TRANSPORT)
+		return
+	}
+	globalOpenTracingEndpoints, exists := os.LookupEnv(ENV_VAR_ENDPOINTS)
+	if !exists {
+		log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_ENDPOINTS)
+		return
+	}
+
+	behaviors.GlobalConfig = &utils.OpenTracingConfig{Implementation: globalOpenTracingImplementation, Transport: globalOpenTracingTransport, Endpoints: strings.Split(globalOpenTracingEndpoints, ",")}
+
+	globalOpenTracingSingleTracer, exists := os.LookupEnv(ENV_VAR_SINGLE_TRACER)
 	if exists {
-		globalOpenTracingTransport, exists := os.LookupEnv(ENV_VAR_TRANSPORT)
-		if !exists {
-			log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_TRANSPORT)
-			return
-		}
-		globalOpenTracingEndpoints, exists := os.LookupEnv(ENV_VAR_ENDPOINTS)
-		if !exists {
-			log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_ENDPOINTS)
-			return
-		}
-
-		behaviors.GlobalConfig = &utils.OpenTracingConfig{Implementation: globalOpenTracingImplementation, Transport: globalOpenTracingTransport, Endpoints: strings.Split(globalOpenTracingEndpoints, ",")}
-
-		globalOpenTracingSingleTracer, exists := os.LookupEnv(ENV_VAR_SINGLE_TRACER)
-		if exists {
-			useSingleTracer, _ := strconv.ParseBool(globalOpenTracingSingleTracer)
-			if useSingleTracer {
-				behaviors.GlobalTracer, _ = utils.InitTracer("flogo", behaviors.GlobalConfig)
-			}
+		useSingleTracer, _ := strconv.ParseBool(globalOpenTracingSingleTracer)
+		if useSingleTracer {
+			behaviors.GlobalTracer, _ = utils.InitTracer("flogo", behaviors.GlobalConfig)
 		}
 	}
 }
