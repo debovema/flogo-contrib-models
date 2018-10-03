@@ -9,8 +9,16 @@ if [ ! -d ./src/*/vendor/github.com/TIBCOSoftware ]; then
 fi
 
 # this go get will (force-)retrieve all dependencies of the model to $GOPATH/src
+echo "Getting Go dependencies"
 go get github.com/debovema/flogo-contrib-models/opentracing
 
+if [ $? -ne 0 ]; then
+  echo
+  echo "Fatal: unable to retrieve Go dependencies" >&2
+  exit 1
+fi
+
+echo "Patch repositories..."
 # remove existing repositories in vendor/
 rm -rf ./src/*/vendor/github.com/debovema/flogo-contrib-models
 rm -rf ./src/*/vendor/github.com/TIBCOSoftware/flogo-contrib
