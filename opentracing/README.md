@@ -13,6 +13,11 @@ This model is not available with the Flogo Web UI.
 
 ### Flogo CLI
 
+Use patched version of Flogo CLI:
+```bash
+go get -u github.com/debovema/flogo-cli/...
+```
+
 #### Install the contribution
 
 In the directory of a Flogo project (with a *flogo.json* file), run:
@@ -21,17 +26,16 @@ In the directory of a Flogo project (with a *flogo.json* file), run:
 flogo install github.com/debovema/flogo-contrib-models/opentracing
 ```
 
-#### Patch flogo-contrib and flogo-lib
-
 **IMPORTANT**: This model requires some little updates in flogo-contrib and flogo-lib which are not yet merged into
-TIBCOSoftware repositories. **This section will be removed after the merge**.
-A script is provided to perform the operation.
-
-In the directory of the Flogo project (with a *flogo.json* file), run:
+TIBCOSoftware repositories. Simply run following additionnal commands:
 
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/debovema/flogo-contrib-models/master/opentracing/patch-vendor.sh)"
+flogo install -u -v working-data-between-flow-and-activities -s github.com/debovema/flogo-contrib github.com/TIBCOSoftware/flogo-contrib
+flogo install -u -v working-data-between-flow-and-activities -s github.com/debovema/flogo-lib github.com/TIBCOSoftware/flogo-lib
+flogo install -u -o -v master github.com/apache/thrift
 ```
+
+**These additionnal commands will be removed after the merge**.
 
 #### Build and run
 
