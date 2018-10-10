@@ -15,7 +15,21 @@ This model is not available with the Flogo Web UI.
 
 Use patched version of Flogo CLI:
 ```bash
-go get -u github.com/debovema/flogo-cli/...
+go get -u github.com/TIBCOSoftware/flogo-cli/...
+
+cd $GOPATH/src/github.com/TIBCOSoftware/flogo-cli
+
+git remote add debovema https://github.com/debovema/flogo-cli.git
+git pull debovema master
+
+go get -u ./...
+```
+
+If you want to switch back to the official Flogo CLI, simply run:
+```bash
+rm -rf $GOPATH/src/github.com/TIBCOSoftware/flogo-cli
+
+go get -u github.com/TIBCOSoftware/flogo-cli/...
 ```
 
 #### Install the contribution
