@@ -12,6 +12,7 @@ import (
 	zipkin "github.com/openzipkin-contrib/zipkin-go-opentracing"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-client-go/transport"
 )
 
 const (
@@ -33,7 +34,7 @@ type OpenTracingConfig struct {
 	Endpoints      []string `json:"endpoints"`
 }
 
-func initJaeger(service string) (opentracing.Tracer, io.Closer) {
+func initJaegerStdOut(service string) (opentracing.Tracer, io.Closer) {
 	cfg := &config.Configuration{
 		Sampler: &config.SamplerConfig{
 			Type:  "const",
@@ -47,6 +48,14 @@ func initJaeger(service string) (opentracing.Tracer, io.Closer) {
 	if err != nil {
 		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
 	}
+	return tracer, closer
+}
+
+func initJaegerHttp(service string, endpoint string) (opentracing.Tracer, io.Closer) {
+	sender := transport.NewHTTPTransport(endpoint, transport.HTTPBatchSize(1))
+
+	tracer, closer := jaeger.NewTracer(service, jaeger.NewConstSampler(true), jaeger.NewRemoteReporter(sender))
+
 	return tracer, closer
 }
 
@@ -128,7 +137,10 @@ func InitTracer(serviceName string, opentracingConfig *OpenTracingConfig) (opent
 	case "jaeger":
 		switch opentracingConfig.Transport {
 		case "stdout":
-			jaeger, _ := initJaeger(serviceName)
+			jaeger, _ := initJaegerStdOut(serviceName)
+			return jaeger, nil
+		case "http":
+			jaeger, _ := initJaegerHttp(serviceName, opentracingConfig.Endpoints[0])
 			return jaeger, nil
 		default:
 			return nil, errors.New("supported transport for OpenTracing Jaeger traecer is 'stdout'")

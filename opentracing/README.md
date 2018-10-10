@@ -208,7 +208,7 @@ For instance:
 This model can send traces to the following collectors:
 * [Zipkin](https://zipkin.io/) over HTTP transport
 * Zipkin over Kafka transport
-* [Jaeger](https://www.jaegertracing.io/) over HTTP transport (TODO)
+* [Jaeger](https://www.jaegertracing.io/) over HTTP transport
 
 For test purposes, here are quick methods to get collectors up and running locally, using Docker. 
 
@@ -286,4 +286,35 @@ If using Docker Machine, replace *127.0.0.1* by the IP of the active Docker Mach
 
 #### HTTP transport
 
-TODO
+To start a single-node instance of a Jaeger server with HTTP transport, run:
+
+```bash
+docker run -d --name jaeger \
+  -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 \
+  -p 5775:5775/udp \
+  -p 6831:6831/udp \
+  -p 6832:6832/udp \
+  -p 5778:5778 \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  -p 9411:9411 \
+  jaegertracing/all-in-one
+```
+
+Use following configuration for the model:
+```json
+          {
+            "name": "opentracing-config",
+            "type": "any",
+            "value": {
+              "implementation": "jaeger",
+              "transport": "http",
+              "endpoints": [
+                "http://127.0.0.1:14268/api/traces"
+              ]
+            }
+          }
+```
+
+If using Docker Machine, replace *127.0.0.1* by the IP of the active Docker Machine (usually *192.168.99.100*,
+```echo $(docker-machine ip $(docker-machine active))``` to display the IP).

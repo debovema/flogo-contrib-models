@@ -31,18 +31,21 @@ func initFromEnvVars() {
 		return
 	}
 
-	log.Infof("Flogo OpenTracing implementation detected: %s.", globalOpenTracingImplementation)
+	log.Infof("Implementation : %s", globalOpenTracingImplementation)
 
 	globalOpenTracingTransport, exists := os.LookupEnv(ENV_VAR_TRANSPORT)
 	if !exists {
 		log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_TRANSPORT)
 		return
 	}
+	log.Infof("Transport      : %s", globalOpenTracingTransport)
+
 	globalOpenTracingEndpoints, exists := os.LookupEnv(ENV_VAR_ENDPOINTS)
 	if !exists {
 		log.Errorf("Environment variable %s must be set to initialize OpenTracing tracer.", ENV_VAR_ENDPOINTS)
 		return
 	}
+	log.Infof("Endpoints      : %s", globalOpenTracingEndpoints)
 
 	behaviors.GlobalConfig = &utils.OpenTracingConfig{Implementation: globalOpenTracingImplementation, Transport: globalOpenTracingTransport, Endpoints: strings.Split(globalOpenTracingEndpoints, ",")}
 
