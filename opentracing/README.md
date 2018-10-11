@@ -101,7 +101,7 @@ by
       "id": "flow:sample_flow",
       "data": {
         "name": "SampleFlow",
-        "model": "github.com/square-it/flogo-contrib-models/opentracing",
+        "model": "opentracing-model",
         "attributes": [
           {
             "name": "opentracing-config",
