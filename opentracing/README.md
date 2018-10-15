@@ -20,7 +20,7 @@ go get -u github.com/TIBCOSoftware/flogo-cli/...
 cd $GOPATH/src/github.com/TIBCOSoftware/flogo-cli
 
 git remote add debovema https://github.com/debovema/flogo-cli.git
-git pull debovema master
+git pull debovema ensure-development-mode
 
 go get -u ./...
 ```
